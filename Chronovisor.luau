@@ -55,9 +55,11 @@
             a += 1
         end
 
+
         local Test = Chronovisor(testFnPrint, 1)
-        Test:afterSeconds(1):execute(testFnPrint, 2):afterSeconds(2):execute(testFnPrint, 3)
         
+        Test:afterSeconds(1):execute(testFnPrint, 2):afterSeconds(2):execute(testFnPrint, 3)
+                
         Test:execute(testFnPrint, 4):execute(testFnPrint, 5)
 
         Chronovisor(testFnPrint, 6)
@@ -94,6 +96,13 @@
             function()
                 print("Stop error test 3! (should be extra stopped)")
             end
+        )
+        :onError(
+            function(err: string?, inputNum: number)
+                warn(err, inputNum)
+            end,
+
+            2
         )
     ```
 ]]
