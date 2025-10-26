@@ -63,20 +63,36 @@
 
         -- Loop testing.
         do
-            Chronovisor(function() print("hi lol") end)
-            :onError("Chronovisor Stop")
+            -- Loop with no delay testing.
+            do
+                Chronovisor(function() print("hi lol") end)
+                :onError("Chronovisor Stop")
 
-            :afterSeconds(5)
+                :afterSeconds(5)
 
-            :execute(function() print("hi lol #2") end)
-            :onError("Chronovisor Stop")
+                :execute(function() print("hi lol #2") end)
+                :onError("Chronovisor Stop")
 
-            :afterSeconds(2)
+                :afterSeconds(2)
 
-            :execute(function() print("hi lol #3") end)
-            :onError("Chronovisor Stop")
+                :execute(function() print("hi lol #3") end)
+                :onError("Chronovisor Stop")
 
-            :loop()
+                :loop()
+            end
+
+            -- Loop with delay testing.
+            do
+                Chronovisor(function() print("hi lol #4") end)
+                :onError("Chronovisor Stop")
+
+                :afterSeconds(5)
+
+                :execute(function() print("hi lol #5") end)
+                :onError("Chronovisor Stop")
+
+                :loop(2)
+            end
         end
 
         -- Extensive error catch testing.
@@ -174,7 +190,7 @@ type Inheritance
 
     destroy: (self: Chronovisor) -> (DestroyedChronovisor),
 
-    loop: (self: Chronovisor) -> (Chronovisor)
+    loop: (self: Chronovisor, delay: number?) -> (Chronovisor)
 }
 
 type Chronovisor = setmetatable
@@ -364,8 +380,8 @@ end
     Usage: Loops the Chronovisor.
     Return: Chronovisor
 ]]
-function Inheritance:loop(): Chronovisor
-    while task.wait() do
+function Inheritance:loop(delay: number?): Chronovisor
+    while task.wait(delay) do
         for i: string, v: Chronovisor in pairs(self.PreviousSteps :: { [string]: Chronovisor }) do
             local unpackedParams = table.unpack((v.executes :: { [string]: any }).params)
 
