@@ -52,62 +52,88 @@
             a += 1
         end
 
-
-        local Test = Chronovisor(testFnPrint, 1)
-        
-        Test:afterSeconds(1):execute(testFnPrint, 2):afterSeconds(2):execute(testFnPrint, 3)
+        -- Basic testing.
+        do
+            local Test = Chronovisor(testFnPrint, 1)
                 
-        Test:execute(testFnPrint, 4):execute(testFnPrint, 5)
+            Test:afterSeconds(1):execute(testFnPrint, 2):afterSeconds(2):execute(testFnPrint, 3)
+                        
+            Test:execute(testFnPrint, 4):execute(testFnPrint, 5)
+        end
 
-        Chronovisor(testFnPrint, 6)
-        :onError(testFnWarn, 1)
+        -- Loop testing.
+        do
+            Chronovisor(function() print("hi lol") end)
+            :onError("Chronovisor Stop")
 
-        :afterSeconds(3)
+            :afterSeconds(5)
 
-        :execute(testFnPrint, 7)
-        :onError(testFnWarn, 2)
+            :execute(function() print("hi lol #2") end)
+            :onError("Chronovisor Stop")
 
-        :execute(testFnError)
-        :onError(
-            {
-                func
-                = function(err: string?)
+            :afterSeconds(2)
+
+            :execute(function() print("hi lol #3") end)
+            :onError("Chronovisor Stop")
+
+            :loop()
+        end
+
+        -- Extensive error catch testing.
+        do
+            Chronovisor(testFnPrint, 6)
+            :onError(testFnWarn, 1)
+
+            :afterSeconds(3)
+
+            :execute(testFnPrint, 7)
+            :onError(testFnWarn, 2)
+
+            :execute(testFnError)
+            :onError(
+                function(err: string?)
                     warn(err, "Stop error test 1! (stopping)")
                 end,
 
-                thenStop = "stop"
-            }
-        )
+                "Chronovisor Stop"
+            )
 
-        :execute(
-            function()
-                local a: any = ""
-                a += 1
+            :execute(
+                function()
+                    local a: any = ""
+                    a += 1
 
-                print("Stop error test 2! (should be stopped)")
-            end
-        )
-        :onError("stop")
+                    print("Stop error test 2! (should be stopped)")
+                end
+            )
+            :onError("Chronovisor Stop")
 
-        :execute(
-            function()
-                print("Stop error test 3! (should be extra stopped)")
-            end
-        )
-        :onError(
-            function(err: string?, inputNum: number)
-                warn(err, inputNum)
-            end,
+            :execute(
+                function()
+                    print("Stop error test 3! (should be extra stopped)")
+                end
+            )
+            :onError(
+                function(err: string?, inputNum: number)
+                    warn(err, inputNum)
+                end,
 
-            2
-        )
+                2
+            )
+        end
     ```
 ]]
 --!strict
 --!optimize 2
 
 
+local HttpService = game:GetService("HttpService")
+
+
 --[[ @section Types ]]
+type ChronovisorStop = "Chronovisor Stop"
+
+
 type ErrorCallbackType<T...> = (err: string?, T...) -> (...any)
 type ExecuteCallbackType<T...> = (T...) -> (...any)
 
@@ -127,6 +153,8 @@ type DestroyedChronovisor = setmetatable
             afterSeconds: (self: DestroyedChronovisor) -> (DestroyedChronovisor),
 
             destroy: (self: DestroyedChronovisor) -> (DestroyedChronovisor),
+
+            loop: (self: DestroyedChronovisor) -> (DestroyedChronovisor)
         }
     }
 >
@@ -134,16 +162,10 @@ type DestroyedChronovisor = setmetatable
 
 type Inheritance
 = {
-    onError: <U...>(
+    onError
+    : <U...>(
         self: Chronovisor,
-
-        input: ErrorCallbackType<U...>
-        | "stop"
-        | {
-            func: ErrorCallbackType<U...>,
-            thenStop: "stop"
-        },
-        
+        input: ErrorCallbackType<U...> | ChronovisorStop,
         U...
     ) -> (Chronovisor),
 
@@ -151,13 +173,26 @@ type Inheritance
     afterSeconds: (self: Chronovisor, seconds: number) -> (Chronovisor),
 
     destroy: (self: Chronovisor) -> (DestroyedChronovisor),
+
+    loop: (self: Chronovisor) -> (Chronovisor)
 }
 
 type Chronovisor = setmetatable
 <
     {
+        id: string,
+
         success: boolean?,
-        err: string?
+        err: string?,
+
+
+        waits: number?,
+        
+        catchesErrors: { func: ErrorCallbackType<...any>, params: { any } }?,
+        executes: { func: ExecuteCallbackType<...any>, params: { any } }?,
+
+
+        PreviousSteps: { [string]: Chronovisor }?
     },
 
     { __index: Inheritance }
@@ -185,11 +220,24 @@ function Constructor:__call<P...>(func: ExecuteCallbackType<P...>, ...: P...): C
 
     local NewChronovisor
     = {
-        success = success,
-        err = err
+        id = HttpService:GenerateGUID(false),
+        PreviousSteps = {}
     } :: Chronovisor
 
     setmetatable(NewChronovisor :: Chronovisor, { __index = Inheritance })
+
+    -- Add the new Chronovisor to it's own previous steps.
+    do
+        local ClonedChronovisor = NewChronovisor
+
+        ClonedChronovisor.PreviousSteps = nil
+        ClonedChronovisor.executes = { func = func, params = { ... } }
+
+        ClonedChronovisor.success = success
+        ClonedChronovisor.err = err;
+
+        NewChronovisor.PreviousSteps = { [NewChronovisor.id] = ClonedChronovisor }
+    end
 
     return NewChronovisor
 end
@@ -201,22 +249,28 @@ setmetatable(Chronovisor, { __call = Constructor.__call })
 --[[ @section Inheritance ]]
 --[[
     Usage: Handles errors with an inputted function.
-    param    func   ErrorCallbackType<U...>
+    param    func   ErrorCallbackType<U...> | ChronovisorStop
     param    ...    <U...>
-    Return: Chronovisor
+    Return: Chronovisor | DestroyedChronovisor
 ]]
-function Inheritance:onError<U...>
-(
-    input: ErrorCallbackType<U...>
-    | "stop"
-    | {
-        func: ErrorCallbackType<U...>,
-        thenStop: "stop"
-    },
-
+function Inheritance:onError
+<U...>(
+    input: ErrorCallbackType<U...> | ChronovisorStop,
     ...: U...
-): Chronovisor?
-    if typeof(input) == "string" and input == "stop" then
+): Chronovisor | DestroyedChronovisor
+    -- Add the catches errors table to the self steps.
+    do
+        local FoundChronovisor = (self.PreviousSteps :: { [string]: Chronovisor })[self.id]
+        if not FoundChronovisor then return self end
+
+        FoundChronovisor.catchesErrors
+        = {
+            func = input :: ErrorCallbackType<...any>,
+            params = { ... }
+        }
+    end
+
+    if typeof(input) == "string" and input == "Chronovisor Stop" then
         assert(typeof(input) == "string", "Input must be a string.")
 
         if not self.success then
@@ -225,12 +279,12 @@ function Inheritance:onError<U...>
         end
     elseif typeof(input) == "function" then
         assert(typeof(input) == "function", "Input must be a function.")
-        if not self.success then input(self.err, ...) end
-    elseif typeof(input) == "table" and input.thenStop == "stop" then
-        assert(typeof(input) == "table", "Input must be a table.")
 
         if not self.success then
-            input.func(self.err, ...)
+            input(self.err, ...)
+
+            local Args = { ... }
+            if Args[1] ~= "Chronovisor Stop" :: any then return self end
 
             local DestroyedChronovisor = self:destroy()
             return DestroyedChronovisor
@@ -243,9 +297,17 @@ end
 --[[
     Usage: Waits for a number of seconds.
     param    seconds    number
-    Return: Chronovisor
+    Return: Chronovisor?
 ]]
-function Inheritance:afterSeconds(seconds: number): Chronovisor
+function Inheritance:afterSeconds(seconds: number): Chronovisor?
+    -- Add the waits seconds to the self steps.
+    do
+        local FoundChronovisor = (self.PreviousSteps :: { [string]: Chronovisor })[self.id]
+        if not FoundChronovisor then return nil end
+
+        FoundChronovisor.waits = seconds
+    end
+
     task.wait(seconds)
 
     return self
@@ -255,16 +317,24 @@ end
     Usage: Creates a new Chronovisor.
     param    func    ExecuteCallbackType<P...>
     param    ...    <P...>
-    Return: Chronovisor
+    Return: Chronovisor?
 ]]
-function Inheritance:execute<P...>(func: ExecuteCallbackType<P...>, ...: P...): Chronovisor
+function Inheritance:execute<P...>(func: ExecuteCallbackType<P...>, ...: P...): Chronovisor?
     local NewChronovisor = Chronovisor(func, ...)
+    if not NewChronovisor then return nil end
+
+    for i: string, v: Chronovisor in pairs(self.PreviousSteps :: { [string]: Chronovisor }) do
+        v.PreviousSteps = nil
+
+        (NewChronovisor.PreviousSteps :: { [string]: Chronovisor })[i] = v
+    end
+
     return NewChronovisor
 end
 
 --[[
     Usage: Destroys the Chronovisor.
-    Return
+    Return: DestroyedChronovisor
 ]]
 function Inheritance:destroy(): DestroyedChronovisor
     self.success = nil
@@ -288,6 +358,24 @@ function Inheritance:destroy(): DestroyedChronovisor
 
     local DestroyedChronovisor = self :: DestroyedChronovisor
     return DestroyedChronovisor
+end
+
+--[[
+    Usage: Loops the Chronovisor.
+    Return: Chronovisor
+]]
+function Inheritance:loop(): Chronovisor
+    while task.wait() do
+        for i: string, v: Chronovisor in pairs(self.PreviousSteps :: { [string]: Chronovisor }) do
+            local unpackedParams = table.unpack((v.executes :: { [string]: any }).params)
+
+            if (v.executes :: { [string]: any }).func then v.executes.func(unpackedParams) end
+            if (v.catchesErrors :: { [string]: any }).func and not v.success then v.catchesErrors.func(unpackedParams) end
+            if v.waits then task.wait(v.waits) end
+        end
+    end
+
+    return self
 end
 --[[ @end_section Inheritance ]]
 
