@@ -1,40 +1,34 @@
 --[[
-    @Library:
+    @Banner
     ```
-         ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ 
-        |___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|
-                                                                                                                 
-                                                                                                                 
-         _                                                                                                     _ 
-        | |                             _____ _                       _                                       | |
-        | |                            |     | |_ ___ ___ ___ ___ _ _|_|___ ___ ___                           | |
-        | |                            |   --|   |  _| . |   | . | | | |_ -| . |  _|                          | |
-        | |                            |_____|_|_|_| |___|_|_|___|\_/|_|___|___|_|                            | |
-        |_|                                                                                                   |_|
-         _                                                                                                     _ 
-        | |            _____               _                 _ _ _          __    _ _                         | |
-        | |     ___   |  _  |___ ___ _____|_|___ ___ ___ ___| |_| |_ ___   |  |  |_| |_ ___ ___ ___ _ _       | |
-        | |    | .'|  |   __|  _| . |     | |_ -| -_|_ -|___| | | '_| -_|  |  |__| | . |  _| .'|  _| | |      | |
-        | |    |__,|  |__|  |_| |___|_|_|_|_|___|___|___|   |_|_|_,_|___|  |_____|_|___|_| |__,|_| |_  |      | |
-        |_|                                                                                        |___|      |_|
-         _                                                                                                     _ 
-        | |                                 _        _          _____     _                                   | |
-        | |                     _____ ___ _| |___   | |_ _ _   |  |  |___|_|___ ___ ___                       | |
-        | |                    |     | .'| . | -_|  | . | | |  |    -| .'| |  _| . |_ -|                      | |
-        | |                    |_|_|_|__,|___|___|  |___|_  |  |__|__|__,|_|_| |___|___|                      | |
-        |_|                                             |___|                                                 |_|
-                                                                                                                 
-                                                                                                                 
-         ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ ___ 
-        |___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|___|
+        ▀▀▀    ▀▀▀    ▀▀▀    ▀▀▀    ▀▀▀    ▀▀▀    ▀▀▀    ▀▀▀    ▀▀▀    ▀▀▀  
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+        █           ▄    ▄          ▀                                  █   
+        █           █  ▄▀   ▄▄▄   ▄▄▄     ▄ ▄▄   ▄▄▄    ▄▄▄            █   
+        █           █▄█    ▀   █    █     █▀  ▀ █▀ ▀█  █   ▀           █   
+        █           █  █▄  ▄▀▀▀█    █     █     █   █   ▀▀▀▄           █   
+        █           █   ▀▄ ▀▄▄▀█  ▄▄█▄▄   █     ▀█▄█▀  ▀▄▄▄▀           █   
+        █                                                              █   
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+                                                                            
+        ▀▀▀    ▀▀▀    ▀▀▀    ▀▀▀    ▀▀▀    ▀▀▀    ▀▀▀    ▀▀▀    ▀▀▀    ▀▀▀  
+
+        @Author Kairos (Roblox @: roblox_user_5618502527)
+        @Version 1.0.3
     ```
 
-    @Description: Executes a function and allows for error handling.
-    @Description: This can be used to double check things like
-    @Description: trading, or other important functions, fully
-    @Description: execute their sequential actions.
+    @Description Executes a function and allows for error handling.
+    @Description This can be used to double check things like
+    @Description trading, or other important functions, fully
+    @Description execute their sequential actions.
 
-    @Example:
+    @Example
     ```luau
         local testFnPrint
         = function(inputNum: number)
@@ -226,10 +220,14 @@ local Chronovisor = {}
 
 --[[ @section Constructor ]]
 --[[
-    Usage: Prevent errors with an inputted function.
-    param    func    ExecuteCallbackType<P...>
-    param    ...    <P...>
-    Return: Chronovisor
+    @usage Prevent errors with an inputted function.
+
+    @generic_pack P... Inputted function args
+
+    @param func ExecuteCallbackType<P...>
+    @param ... P...
+
+    @return Chronovisor
 ]]
 function Constructor:__call<P...>(func: ExecuteCallbackType<P...>, ...: P...): Chronovisor
     local success, err = pcall(func, ...)
@@ -264,10 +262,14 @@ setmetatable(Chronovisor, { __call = Constructor.__call })
 
 --[[ @section Inheritance ]]
 --[[
-    Usage: Handles errors with an inputted function.
-    param    func   ErrorCallbackType<U...> | ChronovisorStop
-    param    ...    <U...>
-    Return: Chronovisor | DestroyedChronovisor
+    @usage Handles errors with an inputted function.
+
+    @generic_pack U... Inputted error function args
+
+    @param func ErrorCallbackType<U...> | ChronovisorStop
+    @param ... U...
+
+    @return Chronovisor | DestroyedChronovisor
 ]]
 function Inheritance:onError
 <U...>(
@@ -311,9 +313,11 @@ function Inheritance:onError
 end
 
 --[[
-    Usage: Waits for a number of seconds.
-    param    seconds    number
-    Return: Chronovisor?
+    @usage Waits for a number of seconds.
+
+    @param seconds number
+
+    @return Chronovisor?
 ]]
 function Inheritance:afterSeconds(seconds: number): Chronovisor?
     -- Add the waits seconds to the self steps.
@@ -330,10 +334,14 @@ function Inheritance:afterSeconds(seconds: number): Chronovisor?
 end
 
 --[[
-    Usage: Creates a new Chronovisor.
-    param    func    ExecuteCallbackType<P...>
-    param    ...    <P...>
-    Return: Chronovisor?
+    @usage Creates a new Chronovisor.
+
+    @generic_pack P... Inputted function args
+
+    @param func ExecuteCallbackType<P...>
+    @param ... P...
+
+    @return Chronovisor?
 ]]
 function Inheritance:execute<P...>(func: ExecuteCallbackType<P...>, ...: P...): Chronovisor?
     local NewChronovisor = Chronovisor(func, ...)
@@ -341,7 +349,7 @@ function Inheritance:execute<P...>(func: ExecuteCallbackType<P...>, ...: P...): 
 
     for i: string, v: Chronovisor in pairs(self.PreviousSteps :: { [string]: Chronovisor }) do
         v.PreviousSteps = nil
-
+        
         (NewChronovisor.PreviousSteps :: { [string]: Chronovisor })[i] = v
     end
 
@@ -349,8 +357,9 @@ function Inheritance:execute<P...>(func: ExecuteCallbackType<P...>, ...: P...): 
 end
 
 --[[
-    Usage: Destroys the Chronovisor.
-    Return: DestroyedChronovisor
+    @usage Destroys the Chronovisor.
+
+    @return DestroyedChronovisor
 ]]
 function Inheritance:destroy(): DestroyedChronovisor
     self.success = nil
@@ -377,8 +386,9 @@ function Inheritance:destroy(): DestroyedChronovisor
 end
 
 --[[
-    Usage: Loops the Chronovisor.
-    Return: Chronovisor
+    @usage Loops the Chronovisor.
+    
+    @return Chronovisor
 ]]
 function Inheritance:loop(delay: number?): Chronovisor
     while task.wait(delay) do
